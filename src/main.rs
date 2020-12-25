@@ -60,8 +60,6 @@ fn main() {
 }
 
 fn assure_service_status(is_breached: bool) {
-    println!("Assuring service state");
-
     if !is_breached {
         Command::new("systemctl")
             .arg("start")
