@@ -1,5 +1,5 @@
 use std::env::Args;
-use std::fs::read_to_string;
+use std::fs;
 use std::ops::Add;
 
 use anyhow::{Context, ensure, Result};
@@ -24,7 +24,7 @@ pub fn parse_args<'a>(args: Args) -> Result<Config> {
         .add("/statistics/tx_bytes");
 
     // Test if we can read / interface exists
-    read_to_string(bytes_src_filepath.as_str())
+    fs::read_to_string(bytes_src_filepath.as_str())
         .with_context(|| format!("could not read `{}`", bytes_src_filepath))?;
 
     let rate_limit: u64 = args[2].parse().unwrap_or(0);
