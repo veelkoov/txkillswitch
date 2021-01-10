@@ -1,7 +1,8 @@
 use std::env::Args;
+use std::fs::read_to_string;
 use std::ops::Add;
 
-use anyhow::{ensure, Result};
+use anyhow::{Context, ensure, Result};
 
 pub struct Config {
     pub bytes_src_filepath: String,
@@ -21,6 +22,11 @@ pub fn parse_args<'a>(args: Args) -> Result<Config> {
     let bytes_src_filepath = "/sys/class/net/".to_string()
         .add(args[1].as_str())
         .add("/statistics/tx_bytes");
+
+    // Test if we can read / interface exists
+    read_to_string(bytes_src_filepath.as_str())
+        .with_context(|| format!("could not read `{}`", bytes_src_filepath))?;
+
     let rate_limit: u64 = args[2].parse().unwrap_or(0);
     let check_interval: u64 = args[3].parse().unwrap_or(0);
     let report_interval: u64 = args[4].parse().unwrap_or(0);
