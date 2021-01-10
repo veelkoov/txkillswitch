@@ -1,17 +1,20 @@
 use std::env;
 use std::error::Error;
-use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
 
 use arguments::Config;
 use rate::get_current_rate_safely;
 
+use crate::controller::{Controller, ControllerT};
+
 mod arguments;
 mod rate;
+mod controller;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let cfg: Config = arguments::parse_args(env::args())?;
+    let controller = Controller::new_for_systemd_service("httpd")?; // TODO: Parametrize
 
     let pause: Duration = Duration::from_secs(cfg.check_interval);
     let mut report_counter: u64 = cfg.report_interval;
@@ -30,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         if is_breached != was_breached || state_counter >= cfg.status_ensure_interval {
             state_counter = 0;
 
-            assure_service_status(is_breached);
+            controller.run_for(is_breached);
             was_breached = is_breached;
         }
 
@@ -44,21 +47,5 @@ fn main() -> Result<(), Box<dyn Error>> {
         state_counter += 1;
 
         sleep(pause);
-    }
-}
-
-fn assure_service_status(is_breached: bool) {
-    if !is_breached {
-        Command::new("systemctl")
-            .arg("start")
-            .arg("httpd")
-            .output()
-            .expect("Failed to execute process"); // TODO: Report failure
-    } else {
-        Command::new("systemctl")
-            .arg("stop")
-            .arg("httpd")
-            .output()
-            .expect("Failed to execute process"); // TODO: Report failure
     }
 }
