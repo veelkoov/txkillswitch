@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut was_breached: bool = false;
 
     loop {
-        let rate: u64 = get_current_rate(cfg.bytes_src_filepath.as_str());
+        let rate = get_current_rate_safely(cfg.bytes_src_filepath.as_str());
         let is_breached: bool = rate > cfg.rate_limit;
 
         if is_breached != was_breached {
@@ -63,20 +63,26 @@ fn assure_service_status(is_breached: bool) {
     }
 }
 
-fn get_current_rate(bytes_src_filepath: &str) -> u64 {
-    let bytes_str = fs::read_to_string(bytes_src_filepath).expect("error reading bytes stats"); // TODO: Don't panic
+fn get_current_rate_safely(bytes_src_filepath: &str) -> u64 {
+    match get_current_rate(bytes_src_filepath) {
+        Ok(rate) => rate,
 
-    let bytes: u64 = bytes_str.trim_end().parse().unwrap_or(std::u64::MAX); // TODO: Report invalid values
+        Err(error) => {
+            eprintln!("Encountered rate reading problem: {:?}", error);
 
-    let uptime_str: String =
-        fs::read_to_string(UPTIME_SRC_FILEPATH).expect("error reading bytes stats"); // TODO: Don't panic
+            u64::MAX
+        }
+    }
+}
 
-    let uptime_seconds: u64 = uptime_str
-        .split(".")
-        .next()
-        .unwrap_or("1")
-        .parse()
-        .unwrap_or(1); // TODO: Report invalid values
+fn get_current_rate(bytes_src_filepath: &str) -> Result<u64, Box<dyn Error>> {
+    let bytes: u64 = fs::read_to_string(bytes_src_filepath)?.trim_end().parse()?;
 
-    return bytes / uptime_seconds;
+    let uptime_seconds = fs::read_to_string(UPTIME_SRC_FILEPATH)?;
+
+    let uptime_seconds: u64 = uptime_seconds.split(".").next()
+        .ok_or(format!("unexpected uptime format: `{}`", uptime_seconds))?
+        .parse()?;
+
+    return Ok(bytes / uptime_seconds);
 }
