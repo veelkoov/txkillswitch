@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut was_breached: bool = false;
 
     loop {
-        let rate = get_current_rate_safely(cfg.bytes_src_filepath.as_str());
+        let rate = get_current_rate_safely(&cfg.rx_info_file_path, &cfg.tx_info_file_path);
         let is_breached: bool = rate > cfg.rate_limit;
 
         if is_breached != was_breached {

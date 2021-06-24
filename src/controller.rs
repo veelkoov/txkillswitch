@@ -37,8 +37,8 @@ pub trait ControllerT {
 impl ControllerT for Controller {
     fn new_for_systemd_service(service_name: &str) -> Result<Controller> {
         Ok(Controller {
-            breaching: Command::new("sudo systemctl stop ".to_string() + service_name)?,
-            compliant: Command::new("sudo systemctl start ".to_string() + service_name)?,
+            breaching: Command::new(format!("sudo systemctl stop {}", service_name))?,
+            compliant: Command::new(format!("sudo systemctl start {}", service_name))?,
         })
     }
 
